@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard · TaskFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="app-page">
+<div class="app-shell">
+    <aside class="sidebar" id="appSidebar" aria-labelledby="sidebarTitle">
+        <div class="sidebar-inner">
+            <div class="d-flex align-items-center justify-content-between mb-5">
+                <a class="brand-mark" href="{{ url_for('index') }}" id="sidebarTitle"><span class="brand-icon"><i class="bi bi-check2"></i></span><span><span class="brand-name">TaskFlow</span><small>Gestión inteligente de tareas</small></span></a>
+                <button type="button" class="btn-close sidebar-close d-lg-none" aria-label="Cerrar menú"></button>
+            </div>
+            <p class="sidebar-label">Espacio de trabajo</p>
+            <nav class="nav flex-column gap-1" aria-label="Navegación principal">
+                <a class="nav-link active" href="#dashboard"><i class="bi bi-grid-1x2-fill"></i>Dashboard</a>
+                <a class="nav-link" href="#tasks"><i class="bi bi-check2-square"></i>Mis tareas</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user"><span class="avatar"><i class="bi bi-person"></i></span><div class="min-width-0"><strong>{{ session['user'] }}</strong><small>Usuario activo</small></div></div>
+                <a class="logout-link" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</a>
+            </div>
+        </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="app-content">
+        <header class="topbar"><div class="container-fluid px-3 px-lg-5 py-3"><div class="d-flex align-items-center gap-3">
+            <button class="btn menu-toggle d-lg-none" type="button" aria-controls="appSidebar" aria-expanded="false" aria-label="Abrir menú"><i class="bi bi-list"></i></button>
+            <div class="d-none d-sm-block"><span class="topbar-kicker">Panel de control</span><span class="topbar-title">TaskFlow</span></div>
+            <div class="ms-auto d-flex align-items-center gap-2 gap-md-3"><span class="backend-pill"><span class="status-dot"></span>{{ backend_label }}</span><span class="topbar-user d-none d-md-inline"><i class="bi bi-person-circle me-1"></i>{{ session['user'] }}</span></div>
+        </div></div></header>
+        <main class="container-fluid px-3 px-lg-5 py-4 py-lg-5" id="dashboard">
+            <section class="welcome-row mb-4"><div><p class="eyebrow mb-2">{{ backend_label }}</p><h1 class="display-6 fw-bold mb-2">Hola, {{ session['user'] }} <span class="wave">✦</span></h1><p class="text-secondary mb-0">Gestiona tus pendientes y mantén tu día en movimiento.</p></div><button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-2"></i>Nueva tarea</button></section>
+            {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages if category != 'success' %}<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button></div>{% endfor %}{% endwith %}
+            <section class="stats-grid mb-5" aria-label="Resumen de tareas">
+                <article class="stat-card"><div class="stat-icon blue"><i class="bi bi-layers"></i></div><div><span>Total de tareas</span><strong>{{ tareas|length }}</strong><small>Registradas en este backend</small></div></article>
+                <article class="stat-card"><div class="stat-icon violet"><i class="bi bi-hourglass-split"></i></div><div><span>Pendientes</span><strong>{{ tareas|length }}</strong><small>Todas requieren atención</small></div></article>
+                <article class="stat-card stat-card-accent"><div class="stat-icon green"><i class="bi bi-activity"></i></div><div><span>Servidor activo</span><strong>{{ port }}</strong><small>Instancia que respondió</small></div></article>
+            </section>
+            <section id="tasks" class="tasks-section">
+                <div class="section-heading"><div><h2>Mis tareas</h2><p>Un espacio claro para lo que tienes por hacer.</p></div><button class="btn btn-soft" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i>Agregar</button></div>
+                {% if tareas %}<div class="task-list">{% for item in tareas %}<article class="task-row" style="--delay: {{ loop.index0 * 45 }}ms"><div class="task-status"><i class="bi bi-check2"></i></div><div class="task-copy"><h3>{{ item }}</h3><span><i class="bi bi-clock me-1"></i>Pendiente</span></div><div class="task-actions"><button class="icon-button" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index0 }}" aria-label="Editar {{ item }}" title="Editar"><i class="bi bi-pencil"></i></button><button class="icon-button danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-delete-url="{{ url_for('delete', item_id=loop.index0) }}" data-task-name="{{ item }}" aria-label="Eliminar {{ item }}" title="Eliminar"><i class="bi bi-trash3"></i></button></div></article><div class="modal fade" id="editModal{{ loop.index0 }}" tabindex="-1" aria-labelledby="editLabel{{ loop.index0 }}" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content modal-card"><form action="{{ url_for('update', item_id=loop.index0) }}" method="post"><div class="modal-header"><div><span class="modal-kicker">Actualizar tarea</span><h2 class="modal-title h4" id="editLabel{{ loop.index0 }}">Editar tarea</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body"><label for="task{{ loop.index0 }}" class="form-label">Descripción</label><input id="task{{ loop.index0 }}" name="tarea" value="{{ item }}" class="form-control form-control-lg" maxlength="200" required></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit"><i class="bi bi-check2 me-1"></i>Guardar cambios</button></div></form></div></div></div>{% endfor %}</div>{% else %}<div class="empty-state"><div class="empty-art"><i class="bi bi-clipboard2-check"></i></div><div><h2>Todavía no tienes tareas</h2><p>Organiza tu trabajo creando tu primera tarea.</p><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i>Crear primera tarea</button></div></div>{% endif %}
+            </section>
+        </main>
+    </div>
+</div>
+<div class="toast-container position-fixed top-0 end-0 p-3">{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages if category == 'success' %}<div class="toast success-toast show" role="status" aria-live="polite" data-bs-autohide="true" data-bs-delay="4500"><div class="toast-body"><i class="bi bi-check-circle-fill me-2"></i>{{ message }}</div></div>{% endfor %}{% endwith %}</div>
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content modal-card"><form action="{{ url_for('create') }}" method="post"><div class="modal-header"><div><span class="modal-kicker">Organiza tu día</span><h2 class="modal-title h4" id="createTitle">Nueva tarea</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body"><label for="new-task" class="form-label">¿Qué necesitas hacer?</label><input id="new-task" name="tarea" class="form-control form-control-lg" placeholder="Ej. Preparar la presentación" maxlength="200" required autofocus></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg me-1"></i>Crear tarea</button></div></form></div></div></div>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content modal-card text-center"><div class="modal-body p-4"><div class="delete-icon"><i class="bi bi-trash3"></i></div><h2 class="h4 mt-3" id="deleteTitle">¿Eliminar esta tarea?</h2><p class="text-secondary mb-1">Esta acción no se puede deshacer.</p><p class="delete-task-name mb-4" id="deleteTaskName"></p><form id="deleteForm" method="post" class="d-flex gap-2 justify-content-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger" type="submit">Eliminar tarea</button></form></div></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body></html>
