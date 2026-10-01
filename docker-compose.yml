@@ -1,18 +1,58 @@
 version: '3.8'
 
 services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-lab_balanceador}
+      MYSQL_USER: ${DB_USER:-lab_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-lab_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_lab_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
   app1:
     build: .
     environment:
       - PORT=8081
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-lab_balanceador}
+      - DB_USER=${DB_USER:-lab_user}
+      - DB_PASSWORD=${DB_PASSWORD:-lab_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
   app2:
     build: .
     environment:
       - PORT=8082
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-lab_balanceador}
+      - DB_USER=${DB_USER:-lab_user}
+      - DB_PASSWORD=${DB_PASSWORD:-lab_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
   app3:
     build: .
     environment:
       - PORT=8083
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-lab_balanceador}
+      - DB_USER=${DB_USER:-lab_user}
+      - DB_PASSWORD=${DB_PASSWORD:-lab_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   nginx_lb:
     image: nginx:alpine
@@ -24,3 +64,6 @@ services:
       - app1
       - app2
       - app3
+
+volumes:
+  mysql_data:
